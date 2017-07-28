@@ -19,6 +19,7 @@ library
                    , classy-prelude-yesod
                    , mtl
                    , yesod-auth
+                   , text
                                         
   hs-source-dirs:      src
   include-dirs:        src
