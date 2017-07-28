@@ -12,7 +12,8 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:   Handler.Util
+  exposed-modules:   Handler.Answer 
+                   , Handler.Util
     
   build-depends:     base >=4.6 && < 4.10
                    , aeson
