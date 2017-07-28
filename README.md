@@ -18,23 +18,23 @@ It produces three possible json objects:
 
   * When user is not logged in
     ```JSON
-    { error   : true
-    , message : "authentication is required"
-    , data    : null
+    { "error"   : true
+    , "message" : "authentication is required"
+    , "data"    : null
     }
     ```
   * When user record is missing (not found in database)
     ```JSON
-    { error   : true
-    , message : "authentication failure"
-    , data    : null
+    { "error"   : true
+    , "message" : "authentication failure"
+    , "data"    : null
     }
     ```
   * When user is logged in
     ```JSON
-    { error   : false
-    , message : "OK"
-    , data    : "user-name-here"
+    { "error"   : false
+    , "message" : "OK"
+    , "data"    : "user-name-here"
     }
     ```
 
@@ -50,8 +50,8 @@ getUserNameR = answerToRequest $
 If user is not logged in, the server will return
 
 ```JSON
-{ error   : true
-, message : "user is not logged in"
-, data    : null
+{ "error"   : true
+, "message" : "user is not logged in"
+, "data"    : null
 }
 ```
