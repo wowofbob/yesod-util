@@ -1,0 +1,31 @@
+name: yesod-util
+version: "0.0.0"
+
+dependencies:
+- base >=4.6 && < 4.10
+- aeson
+- classy-prelude-yesod
+- conduit-extra
+- mtl
+- text
+- yesod-auth
+
+library:
+  
+  source-dirs: src
+  
+  ghc-options:
+  - -Wall
+  - -fwarn-tabs
+  - -O2
+  
+executables:
+  app:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - yesod-util
