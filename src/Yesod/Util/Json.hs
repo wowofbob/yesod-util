@@ -111,28 +111,6 @@ runJsonObjEnv f =
 -- | Evaluate 'JsonObjEnv' to json 'Value'.
 withJsonObjEnv :: (MonadHandler m, ToJSON a) => JsonObjEnv m a -> m Value
 withJsonObjEnv = runExceptJ . runJsonObjEnv
-
-
--- | Get 'Entity' from database using 'Key' from json object.
-askEntity
-  ::
-  ( IsYesodPersistEntity master r
-  , PersistStoreRead (YesodPersistBackend master)
-  , Typeable r
-  ) => Text -> JsonObjEnv (HandlerT master IO) (Entity r)
-askEntity key = do
-  askValue key >>= getEntity
-
--- | Get 'Entity' from database using 'Key' from json object;
--- make sure it matches provided predicate.
-askEntityWhich
-  ::
-  ( IsYesodPersistEntity master r
-  , PersistStoreRead (YesodPersistBackend master)
-  , Typeable r
-  ) => Predicate r -> Text -> JsonObjEnv (HandlerT master IO) (Entity r)
-askEntityWhich p key = do
-  askValue key >>= getEntityWhich p
   
 
 -- | Parse request body to json 'Value'.
@@ -184,3 +162,30 @@ askValue key = do
           ++ "' associated with key '"
             ++ show k
               ++ "'"
+
+-- | Get 'Entity' from database using 'Key' from json object.
+askEntity
+  ::
+  ( IsYesodPersistEntity master r
+  , PersistStoreRead (YesodPersistBackend master)
+  , Typeable r
+  , MonadTrans m
+  , MonadError Text (m (HandlerT master IO))
+  , MonadReader Object (m (HandlerT master IO))
+  ) => Text -> m (HandlerT master IO) (Entity r)
+askEntity key = do
+  askValue key >>= getEntity
+
+-- | Get 'Entity' from database using 'Key' from json object;
+-- make sure it matches provided predicate.
+askEntityWhich
+  ::
+  ( IsYesodPersistEntity master r
+  , PersistStoreRead (YesodPersistBackend master)
+  , Typeable r
+  , MonadTrans m
+  , MonadError Text (m (HandlerT master IO))
+  , MonadReader Object (m (HandlerT master IO))
+  ) => Predicate r -> Text -> m (HandlerT master IO) (Entity r)
+askEntityWhich p key = do
+  askValue key >>= getEntityWhich p
