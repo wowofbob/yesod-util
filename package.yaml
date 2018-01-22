@@ -9,6 +9,7 @@ dependencies:
 - mtl
 - text
 - yesod-auth
+- yesod
 
 library:
   
