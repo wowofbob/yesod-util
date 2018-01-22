@@ -13,6 +13,8 @@ dependencies:
 # Extra dependencies needed for executable 'app':
 - yesod
 - filepath
+- directory
+- bytestring
 
 library:
   

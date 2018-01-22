@@ -1,4 +1,5 @@
 .stack-work
 yesod-util.cabal
 client_session_key.aes
+_junk
 *~
