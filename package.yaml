@@ -2,6 +2,7 @@ name: yesod-util
 version: "0.0.0"
 
 dependencies:
+# Library dependencies:
 - base >=4.6 && < 4.10
 - aeson
 - classy-prelude-yesod
@@ -9,7 +10,9 @@ dependencies:
 - mtl
 - text
 - yesod-auth
+# Extra dependencies needed for executable 'app':
 - yesod
+- filepath
 
 library:
   

@@ -6,6 +6,8 @@ module Main where
 
 import Yesod
 
+import File.Data
+
 data App = App
 
 mkYesod "App" [parseRoutes|
