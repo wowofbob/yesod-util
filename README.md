@@ -35,3 +35,7 @@ Anyway, there is a downside. For example, if there is no key named "name" in req
 ```
 
 Again, this is usefull when you do not redirect after post and not otherwise.
+
+# Example
+
+There is an example in `app`. It is a subsite which can create, delete, read and write files. Files are being saved on server in `_junk/file`.
