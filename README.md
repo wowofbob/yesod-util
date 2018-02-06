@@ -36,6 +36,17 @@ Anyway, there is a downside. For example, if there is no key named "name" in req
 
 Again, this is usefull when you do not redirect after post and not otherwise.
 
+Also, there is a two wrappers:
+
+* `ExceptJ` - running has a side effect of returning json object back to user either with data or an error message.
+* `JsonObjEnv` - wrapper around `ExceptJ` with json `Object` as environment (well there is `ReaderT` inside too).
+
+You can run then using:
+
+* `runExceptJ` - just convert each `throwError` into json objects.
+* `runJsonObjEnv` - take json object from request body, evaluate it to `ExceptJ` at the end.
+* `withJsonObjEnv` - just like `runJsonObjEnv` but run `ExceptJ` too.
+
 # Example
 
 There is an example in `app`. It is a subsite which can create, delete, read and write files. Files are being saved on server in `_junk/file`.
