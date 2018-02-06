@@ -1,4 +1,4 @@
-name: yesod-util
+name: yesod-except
 version: "0.0.0"
 
 dependencies:
@@ -34,4 +34,4 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - yesod-util
+    - yesod-except
