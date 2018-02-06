@@ -9,19 +9,21 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE ExistentialQuantification  #-}
-module Yesod.Util.Json where
+module Yesod.Except.Wrappers
+( ExceptJ(..)
+, runExceptJ
+, JsonObjEnv(..)
+, runJsonObjEnv
+, withJsonObjEnv
+) where
 
-import ClassyPrelude.Yesod hiding (Text, pack, Proxy, getEntity)
+import ClassyPrelude.Yesod hiding (Text, pack)
 
 import Control.Monad.Except
 import Data.Aeson hiding (json)
-import Data.Aeson.Types
-import Data.Aeson.Parser hiding (value, json)
-import Data.Conduit.Attoparsec
 import Data.Text (Text, pack)
-import Data.Typeable
 
-import Yesod.Util.Persist
+import Yesod.Except.Json
 
 
 -- | Like 'ExceptT' but evaluates to json 'Value'.
@@ -52,8 +54,8 @@ instance (MonadHandler m) => MonadHandler (ExceptJ m) where
   liftHandlerT = lift . liftHandlerT
   
 
--- | Evaluate 'ExceptJ' to this data type.
-newtype Answer a = Answer { toEither :: Either Text a }
+-- | Helper wrapper around 'Either'.
+newtype Answer a = Answer (Either Text a)
 
 instance ToJSON a => ToJSON (Answer a) where
   toJSON (Answer (Left msg)) = object
@@ -103,6 +105,7 @@ instance (MonadHandler m) => MonadHandler (JsonObjEnv m) where
   type HandlerSite (JsonObjEnv m) = HandlerSite m
   liftHandlerT = lift . liftHandlerT
 
+
 -- | Evaluate 'JsonObjEnv' to 'ExceptJ'.
 runJsonObjEnv :: (MonadHandler m) => JsonObjEnv m a -> ExceptJ m a
 runJsonObjEnv f =
@@ -111,81 +114,3 @@ runJsonObjEnv f =
 -- | Evaluate 'JsonObjEnv' to json 'Value'.
 withJsonObjEnv :: (MonadHandler m, ToJSON a) => JsonObjEnv m a -> m Value
 withJsonObjEnv = runExceptJ . runJsonObjEnv
-  
-
--- | Parse request body to json 'Value'.
-parseJsonValue :: (MonadError Text m, MonadHandler m) => m Value
-parseJsonValue = do
-  eValue <- rawRequestBody $$ runCatchC (sinkParser value')
-  case eValue of
-    Left  e -> throwError $ pack $ show e
-    Right v -> pure v
-
--- | Parse request body to json 'Value'; throw error on every case except 'Object'.
-parseJsonObject :: (MonadError Text m, MonadHandler m) => m Object
-parseJsonObject = do
-  v <- parseJsonValue
-  case v of
-    Object obj -> pure obj
-    _          -> throwError "json object expected"
-
--- | Lift 'parseJsonBody' to 'MonadError'.
-getJson
-  :: forall m a .
-       (MonadError Text m, MonadHandler m, FromJSON a, Typeable a) => m a
-getJson = do
-  json <- parseJsonBody
-  case json of
-    Success body -> pure body
-    Error   _    -> throwError . pack $
-                      "invalid json for " ++
-                         show (typeRep (Proxy :: Proxy a))
-
--- | Retrieve json object field by key.
-askValue
-  :: forall m a .
-       ( MonadError Text m
-       , MonadReader Object m
-       , FromJSON a
-       , Typeable a
-       ) => Text -> m a
-askValue key = do
-  obj <- ask
-  case parse_ (obj .: key >>= parseJSON) of
-    Success a -> pure a
-    Error   _ -> throwError (errMsg key)
-  where
-    parse_ p = parse (const p) ()
-    errMsg k = pack $
-      "cannot parse '"
-        ++ show (typeRep (Proxy :: Proxy a))
-          ++ "' associated with key '"
-            ++ show k
-              ++ "'"
-
--- | Get 'Entity' from database using 'Key' from json object.
-askEntity
-  ::
-  ( IsYesodPersistEntity master r
-  , PersistStoreRead (YesodPersistBackend master)
-  , Typeable r
-  , MonadTrans m
-  , MonadError Text (m (HandlerT master IO))
-  , MonadReader Object (m (HandlerT master IO))
-  ) => Text -> m (HandlerT master IO) (Entity r)
-askEntity key = do
-  askValue key >>= getEntity
-
--- | Get 'Entity' from database using 'Key' from json object;
--- make sure it matches provided predicate.
-askEntityWhich
-  ::
-  ( IsYesodPersistEntity master r
-  , PersistStoreRead (YesodPersistBackend master)
-  , Typeable r
-  , MonadTrans m
-  , MonadError Text (m (HandlerT master IO))
-  , MonadReader Object (m (HandlerT master IO))
-  ) => Predicate r -> Text -> m (HandlerT master IO) (Entity r)
-askEntityWhich p key = do
-  askValue key >>= getEntityWhich p
