@@ -124,3 +124,8 @@ exceptToMessage f = do
   case eres of
     Left  msg -> setMessage . toHtml $ msg
     Right _   -> pure ()
+
+-- | Run 'ExceptT'. Convert the result into 'Value'. Return it as json.
+exceptToValue :: (ToJSON a, Monad m) => ExceptT Text m a -> m Value
+exceptToValue f = do
+  runExceptT f >>= returnJson . Answer
