@@ -10,6 +10,7 @@ dependencies:
 - mtl
 - text
 - yesod-auth
+- blaze-markup
 # Extra dependencies needed for executable 'app':
 - yesod
 - filepath

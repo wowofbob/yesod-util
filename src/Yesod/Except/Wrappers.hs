@@ -22,6 +22,7 @@ import ClassyPrelude.Yesod hiding (Text, pack)
 import Control.Monad.Except
 import Data.Aeson hiding (json)
 import Data.Text (Text, pack)
+import Text.Blaze
 
 import Yesod.Except.Json
 
@@ -114,3 +115,12 @@ runJsonObjEnv f =
 -- | Evaluate 'JsonObjEnv' to json 'Value'.
 withJsonObjEnv :: (MonadHandler m, ToJSON a) => JsonObjEnv m a -> m Value
 withJsonObjEnv = runExceptJ . runJsonObjEnv
+
+
+-- | Run 'ExceptT'. On error, call 'setMessage'. Otherwise, ignore result.
+exceptToMessage :: (ToMarkup t, MonadHandler m) => ExceptT t m a -> m ()
+exceptToMessage f = do
+  eres <- runExceptT f
+  case eres of
+    Left  msg -> setMessage . toHtml $ msg
+    Right _   -> pure ()
