@@ -45,4 +45,4 @@ getEntity_ k = do
   case mr of
     Just r  -> pure (Entity k r) 
     Nothing -> throwError . pack $
-                 "unknown" ++ (show $ typeRep (Proxy :: Proxy r))
+                 "unknown " ++ (show $ typeRep (Proxy :: Proxy r))
