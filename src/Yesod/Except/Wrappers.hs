@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE ExistentialQuantification  #-}
+{-# LANGUAGE FunctionalDependencies     #-}
 module Yesod.Except.Wrappers
 ( ExceptJ(..)
 , runExceptJ
@@ -129,3 +130,30 @@ exceptToMessage f = do
 exceptToValue :: (ToJSON a, Monad m) => ExceptT Text m a -> m Value
 exceptToValue f = do
   runExceptT f >>= returnJson . Answer
+
+-- | Same as 'ExceptT' but 'run' calls 'setMessage' on 'Left'.
+newtype ExceptM m a = ExceptM { unExceptM :: ExceptT Text m a }
+
+runExceptM :: (MonadHandler m) => ExceptM m a -> m ()
+runExceptM = exceptToMessage . unExceptM
+
+-- | Same as 'ExceptT' but 'run' converts 'Either' into 'Value'.
+newtype ExceptV m a = ExceptV { unExceptV :: ExceptT Text m a }
+
+runExceptV :: (ToJSON a, Monad m) => ExceptV m a -> m Value
+runExceptV = exceptToValue . unExceptV
+
+
+type family ETHC m f a where
+  ETHC ExceptM f a = (MonadHandler f)
+  ETHC ExceptV f a = (Monad f, ToJSON a)
+
+class ExceptToHandler m r | m -> r where
+  unliftError :: ETHC m f a => m f a -> f r
+
+instance ExceptToHandler ExceptM () where
+  unliftError = runExceptM
+
+instance ExceptToHandler ExceptV Value where
+  unliftError = runExceptV
+
