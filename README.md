@@ -57,7 +57,7 @@ If everything is OK, then user gets back object
 }
 ```
 
-If, for instance, there is no key 'name' in json object, or if it references to wrong type, then user gets back object 
+If, for instance, there is no key `"name"` in json object, or if it references to wrong type, then user gets back object 
 
 ```json
 { data    : null
@@ -70,6 +70,7 @@ One can change the behaviour of this handler simply by replacing `ExceptV` by `E
 case, user won't get back a json object. Instead, an error will be set in user session. This must
 cover *post/redirect/get* usage case. For example:
 
+```haskell
 -- | Handler for creation of notes. On error, set message in session.
 postCreateNoteR :: Handler ()
 postCreateNoteR = withObjEnv ExceptM $ do
