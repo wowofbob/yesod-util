@@ -73,7 +73,7 @@ cover *post/redirect/get* usage case. For example:
 ```haskell
 -- | Handler for creation of notes. On error, set message in session.
 postCreateNoteR :: Handler ()
-postCreateNoteR = withObjEnv ExceptM $ do
+postCreateNoteR =
 
   -- Explicitly say that there must be a json object provided.
   -- It doesn't matter what fields it contains.  
