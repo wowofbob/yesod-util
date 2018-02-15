@@ -59,28 +59,6 @@ mkAbsPath
   :: YesodFile master =>
     FilePath -> HandlerT File (HandlerT master IO) FilePath
 mkAbsPath filePath = flip combine filePath <$> lift fileRootDir
-
--- | Ask file path from environment.
-askFile
-  :: YesodFile master =>
-    JsonObjEnv (HandlerT File (HandlerT master IO)) FilePath
-askFile = askValue "file" >>= lift . mkAbsPath
-
--- | Ask path to existing file from environment.
-askExistingFile
-  :: YesodFile master =>
-    JsonObjEnv (HandlerT File (HandlerT master IO)) FilePath
-askExistingFile = do
-  fp <- askFile
-  exists <- liftIO $ doesFileExist fp
-  when (not exists) $ throwError "file does not exist"
-  pure fp
-  
--- | Ask file contents from environment.
-askContents
-  :: YesodFile master =>
-    JsonObjEnv (HandlerT File (HandlerT master IO)) Text
-askContents = askValue "text"
   
 
 -- * Subsite handlers.
@@ -89,22 +67,37 @@ mkYesodSubData "File" [parseRoutes|
 / FileR DELETE GET PUT PATCH
 |]
 
+guardFileExists :: (MonadIO m, MonadError Text m) => FilePath -> m FilePath
+guardFileExists fp = do
+  exists <- liftIO $ doesFileExist fp
+  when (not exists) $ throwError "file does not exist"
+  pure fp
+
 deleteFileR :: FileHandler Value
-deleteFileR = withJsonObjEnv $ do
-  askExistingFile >>= liftIO . removeFile
-
+deleteFileR = withObjEnv ExceptV $ do
+  fileName <- askValue "file"
+  filePath <- lift . mkAbsPath $ fileName
+  guardFileExists filePath
+  liftIO $ removeFile filePath
+  
 getFileR :: FileHandler Value
-getFileR = withJsonObjEnv $ do
-  askExistingFile >>= liftIO . readUtf8File
-
+getFileR = withObjEnv ExceptV $ do
+  fileName <- askValue "file"
+  filePath <- lift . mkAbsPath $ fileName
+  guardFileExists filePath
+  liftIO $ readUtf8File filePath
+  
 putFileR :: FileHandler Value
-putFileR = withJsonObjEnv $ do
-  path <- askFile
-  text <- askContents
-  liftIO $ writeUtf8File path text
+putFileR = withObjEnv ExceptV $ do
+  fileName <- askValue "file"
+  filePath <- lift . mkAbsPath $ fileName
+  contents <- askValue "text"
+  liftIO $ writeUtf8File filePath contents
 
 patchFileR :: FileHandler Value
-patchFileR = withJsonObjEnv $ do
-  path <- askExistingFile
-  text <- askContents
-  liftIO $ writeUtf8File path text
+patchFileR = withObjEnv ExceptV $ do
+  fileName <- askValue "file"
+  filePath <- lift . mkAbsPath $ fileName
+  guardFileExists filePath
+  contents <- askValue "text"
+  liftIO $ writeUtf8File filePath contents

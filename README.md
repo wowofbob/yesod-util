@@ -1,31 +1,63 @@
 # yesod-except
 
-Lift functions returning `Maybe` to `ExceptT`. Use `Text` as an error type. On error, return information about what was expected using `Data.Typeable`. This information is useful for debugging. I'm not sure that user may want to see it in message after redirect. Anyway, running wrappers yields `Value` which then can be returned. There is no mechanics for setting a message yet.
+This library provides set of functions for dealing with json and database.
+Basically, each functions corresponds to it's out-of-the-box analogue, but
+lifted to `MonadError`. 
 
-I find it very useful for json parsing. Usually, one wrties a `newtype` or `data` and adds `FromJSON` instances. Sometimes, especially when you are experimenting, you are not so sure about which names to use for keys, or which data to except from a client. Each change to API requires changing underlying `newtype` or `data` used for json parsing. And I realy don't like it. So, now I can write handlers like:
+Anyway, writing class-dependent functions is great, but at some point they must
+be executed. In `Wrappers` module one can find a three wrappers around `ExceptT`
+which differs by their side effects.
+
+Here is short example. Suppose you want to write a handler which creates a note
+on server. The note might be saved in file system or database, but it's not the
+point. Our handler will expect a json object as an argument of form:
+
+```json
+{ name     : "name-of-note"
+, comment  : "optional-comment-for-note"
+, contents : "contents-of-note"
+}
+```
+To deal with this, one can define a `Note` data type and provide corresponding
+`FromJSON` instance. But it takes time, and if later you'll decide to change
+API, you'll have to change this data type too. I don't like it. So, I would
+write this handler like that:
 
 ```haskell
 -- | Handler for creation of notes.
 postCreateNoteR :: Handler Value
-postCreateNoteR = withJsonObjEnv $ do
+postCreateNoteR =
+
+  -- Explicitly say that there must be a json object provided.
+  -- It doesn't matter what fields it contains.  
+  withObjEnv
   
-  -- How to call a new note.
-  noteName <- askValue "name"
+    -- Explicitly say how to report back about error to user.
+    ExceptV $ do
   
-  -- Short comment about a note.
-  noteComment <- askValue "comment"
-  
-  -- Contents of this note.
-  noteContents <- askValue "contents"
-  
-  -- Save to file system or database.
-  lift . saveNote $
-    Note noteName noteComment noteContents
+      -- Get "name" field from json object.
+      noteName <- askValue "name"
+      
+      -- Get "comment" field.
+      noteComment <- askValue "comment"
+      
+      -- Get "contents" field.
+      noteContents <- askValue "contents"
+      
+      -- Save to file system or database.
+      lift . saveNote $
+        noteName noteComment noteContents
 ```
 
-This way, if I'll find that comment is a somthing I don't need, I can just do a minor refactoring. But this is a silly example.
+If everything is OK, then user gets back object
+```json
+{ data    : []
+, error   : false
+, message : "OK"
+}
+```
 
-Anyway, there is a downside. For example, if there is no key named "name" in request body, then the user will get back a json object like:
+If, for instance, there is no key 'name' in json object, or if it references to wrong type, then user gets back object 
 
 ```json
 { data    : null
@@ -34,18 +66,37 @@ Anyway, there is a downside. For example, if there is no key named "name" in req
 }
 ```
 
-Again, this is usefull when you do not redirect after post and not otherwise.
+One can change the behaviour of this handler simply by replacing `ExceptV` by `ExceptM`. In this
+case, user won't get back a json object. Instead, an error will be set in user session. This must
+cover *post/redirect/get* usage case. For example:
 
-Also, there is a two wrappers:
+-- | Handler for creation of notes. On error, set message in session.
+postCreateNoteR :: Handler ()
+postCreateNoteR = withObjEnv ExceptM $ do
 
-* `ExceptJ` - running has a side effect of returning json object back to user either with data or an error message.
-* `JsonObjEnv` - wrapper around `ExceptJ` with json `Object` as environment (well there is `ReaderT` inside too).
+  -- Explicitly say that there must be a json object provided.
+  -- It doesn't matter what fields it contains.  
+  withObjEnv
+  
+    -- Now object won'be returned. Instead, a message will be set on error.
+    -- Also, not that the result type of handler changed too.
+    ExceptM $ do
+  
+      -- Get "name" field from json object.
+      noteName <- askValue "name"
+      
+      -- Get "comment" field.
+      noteComment <- askValue "comment"
+      
+      -- Get "contents" field.
+      noteContents <- askValue "contents"
+      
+      -- Save to file system or database.
+      lift . saveNote $
+        noteName noteComment noteContents
+```
 
-You can run then using:
-
-* `runExceptJ` - just convert each `throwError` into json objects.
-* `runJsonObjEnv` - take json object from request body, evaluate it to `ExceptJ` at the end.
-* `withJsonObjEnv` - just like `runJsonObjEnv` but run `ExceptJ` too.
+As a downside, most messages are fine for debugging, but user might not want to see them.
 
 # Example
 
