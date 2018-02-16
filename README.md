@@ -27,23 +27,23 @@ write this handler like that:
 -- | Handler for creation of notes.
 postCreateNoteR :: Handler Value
 postCreateNoteR =
-
-  -- Explicitly say that there must be a json object provided.
-  -- It doesn't matter what fields it contains.  
-  withObjEnv
   
-    -- Explicitly say how to report back about error to user.
-    ExceptV $ do
+  -- Wrap handler into MonadError instance which returns json (`returnJson`).
+  runExceptV .
   
+    -- Explicitly say that there must be a json object provided.
+    -- It doesn't matter what fields it contains.  
+    withJsonObject $ do
+    
       -- Get "name" field from json object.
       noteName <- askValue "name"
-      
+
       -- Get "comment" field.
       noteComment <- askValue "comment"
-      
+
       -- Get "contents" field.
       noteContents <- askValue "contents"
-      
+
       -- Save to file system or database.
       lift . saveNote $
         noteName noteComment noteContents
@@ -75,23 +75,23 @@ cover *post/redirect/get* usage case. For example:
 postCreateNoteR :: Handler ()
 postCreateNoteR =
 
-  -- Explicitly say that there must be a json object provided.
-  -- It doesn't matter what fields it contains.  
-  withObjEnv
+  -- Now object won'be returned. Instead, a message will be set on error.
+  -- Also, not that the result type of handler changed too.
+  runExceptV .
   
-    -- Now object won'be returned. Instead, a message will be set on error.
-    -- Also, not that the result type of handler changed too.
-    ExceptM $ do
-  
+    -- Explicitly say that there must be a json object provided.
+    -- It doesn't matter what fields it contains.  
+    withJsonObject $ do
+    
       -- Get "name" field from json object.
       noteName <- askValue "name"
-      
+
       -- Get "comment" field.
       noteComment <- askValue "comment"
-      
+
       -- Get "contents" field.
       noteContents <- askValue "contents"
-      
+
       -- Save to file system or database.
       lift . saveNote $
         noteName noteComment noteContents
