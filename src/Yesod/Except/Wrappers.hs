@@ -1,21 +1,16 @@
-{-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE ExistentialQuantification  #-}
-{-# LANGUAGE FunctionalDependencies     #-}
 module Yesod.Except.Wrappers
-( withObjEnv
-, ExceptV(..)
+( ExceptV(..)
 , runExceptV
+, runExceptVWithObject
 , ExceptM(..)
 , runExceptM
+, runExceptMWithObject
 ) where
 
 import ClassyPrelude.Yesod hiding (Text, pack)
@@ -52,6 +47,7 @@ instance (MonadHandler m) => MonadHandler (ExceptM m) where
   type HandlerSite (ExceptM m) = HandlerSite m
   liftHandlerT = lift . liftHandlerT
 
+
 -- | Run 'ExceptT'. On error, call 'setMessage'. Otherwise, ignore result.
 exceptToMessage :: (ToMarkup t, MonadHandler m) => ExceptT t m a -> m ()
 exceptToMessage f = do
@@ -63,6 +59,13 @@ exceptToMessage f = do
 -- | Run 'ExceptM'. As a side effect, set message in session on error.
 runExceptM :: (MonadHandler m) => ExceptM m a -> m ()
 runExceptM = exceptToMessage . unExceptM
+
+-- | Run environment with json object and set message in session on error.
+runExceptMWithObject
+  :: (MonadHandler m)
+    => ReaderT Object (ExceptM m) a -> m ()
+runExceptMWithObject = runExceptM . withJsonObject
+
 
 -- | Same as 'ExceptT' but 'run' converts 'Either' into 'Value'.
 newtype ExceptV m a = ExceptV { unExceptV :: ExceptT Text m a }
@@ -88,6 +91,7 @@ instance (MonadHandler m) => MonadHandler (ExceptV m) where
   type HandlerSite (ExceptV m) = HandlerSite m
   liftHandlerT = lift . liftHandlerT
 
+
 -- | Helper wrapper around 'Either'.
 newtype Answer a = Answer (Either Text a)
 
@@ -112,55 +116,8 @@ exceptToValue f = do
 runExceptV :: (ToJSON a, Monad m) => ExceptV m a -> m Value
 runExceptV = exceptToValue . unExceptV
 
-
--- | Constraints for handler wrapped into 'MonadError'.
-type family EHC m f a where
-  EHC ExceptM f a = (MonadHandler f)
-  EHC ExceptV f a = (Monad f, ToJSON a)
-
--- | Remove 'MonadError' layer back to handler.
-class ErrorHandler m r | m -> r where
-  unliftError :: EHC m f a => m f a -> f r
-
-instance ErrorHandler ExceptM () where
-  unliftError = runExceptM
-
-instance ErrorHandler ExceptV Value where
-  unliftError = runExceptV
-  
-  
--- | Reader with json 'Object' (may be changed).
-newtype ObjEnv m a =
-  ObjEnv
-    { unObjEnv :: ReaderT Object (ExceptT Text m) a }
-    deriving
-      ( Functor
-      , Applicative
-      , Monad
-      , MonadIO
-      , MonadError  Text
-      , MonadReader Object
-      , MonadThrow
-      )
-
-instance MonadTrans ObjEnv where
-  lift = ObjEnv . lift . lift
-
-instance (MonadBase IO m) => MonadBase IO (ObjEnv m) where
-  liftBase = lift . liftBase
-
-instance (MonadResource m) => MonadResource (ObjEnv m) where 
-  liftResourceT = lift . liftResourceT
-
-instance (MonadHandler m) => MonadHandler (ObjEnv m) where
-  type HandlerSite (ObjEnv m) = HandlerSite m
-  liftHandlerT = lift . liftHandlerT
-
-
--- | Use json 'Object' as an environment. Provide constructor of 'ErrorHandler'
--- in order to specify the way an error gets rendered.
-withObjEnv
-  :: (MonadHandler m, ErrorHandler w r, EHC w f a)
-  => (ExceptT Text m b -> w f a) -> ObjEnv m b -> f r
-withObjEnv e f = unliftError . e $ do
-  parseJsonObject >>= runReaderT (unObjEnv f)
+-- | Run environment with json object and return json reply to user.
+runExceptVWithObject
+  :: (MonadHandler m, ToJSON a)
+    => ReaderT Object (ExceptV m) a -> m Value
+runExceptVWithObject = runExceptV . withJsonObject

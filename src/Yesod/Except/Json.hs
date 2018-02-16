@@ -13,6 +13,8 @@ module Yesod.Except.Json
 , parseJsonBody_
 , askValue
 , askEntity
+, withJsonObject
+, HasObject
 ) where
 
 import ClassyPrelude.Yesod hiding (Text, pack, Proxy, parseJsonBody_)
@@ -98,3 +100,9 @@ askEntity
   ) => Text -> m (HandlerT master IO) (Entity r)
 askEntity key = do
   askValue key >>= getEntity_
+
+-- | Get json object from request body and use it as environment.
+withJsonObject
+  :: (MonadHandler m, MonadError Text m) => ReaderT Object m b -> m b
+withJsonObject f = do
+  parseJsonObject >>= runReaderT f
