@@ -1,16 +1,10 @@
 # yesod-except
 
-This library provides set of functions for dealing with json and database.
-Basically, each functions corresponds to it's out-of-the-box analogue, but
-lifted to `MonadError`. 
+Lift functions from `Maybe` to `MonadError`. On error, either set message in session (`setMessage`) or return back json object to user.
 
-Anyway, writing class-dependent functions is great, but at some point they must
-be executed. In `Wrappers` module one can find a three wrappers around `ExceptT`
-which differs by their side effects.
+## Short example.
 
-Here is short example. Suppose you want to write a handler which creates a note
-on server. The note might be saved in file system or database, but it's not the
-point. Our handler will expect a json object as an argument of form:
+Suppose you want to write a handler which creates a note on server. The note might be saved in file system or database, but it's not the point. Our handler will expect a json object as an argument of form:
 
 ```json
 { name     : "name-of-note"
@@ -18,21 +12,34 @@ point. Our handler will expect a json object as an argument of form:
 , contents : "contents-of-note"
 }
 ```
+
 To deal with this, one can define a `Note` data type and provide corresponding
-`FromJSON` instance. But it takes time, and if later you'll decide to change
-API, you'll have to change this data type too. I don't like it. So, I would
-write this handler like that:
+`FromJSON` instance:
+
+```haskell
+data Note = Note
+  { noteName     :: Text
+  , noteComment  :: Maybe Text
+  , noteContents :: Text
+  }
+
+instance FromJSON Note where
+  parseJSON (Object obj) =
+    Note <*> obj .: "name" <$> obj .: "comment" <$> obj .: "contents"
+  parseJSON invalid = typeMismatch "Note" invalid
+```
+
+But it takes time, and if later you'll decide to change handler's API, you'll have to change this data type too. I don't like it. So, I would write this handler like that:
 
 ```haskell
 -- | Handler for creation of notes.
 postCreateNoteR :: Handler Value
 postCreateNoteR =
   
-  -- Wrap handler into 'MonadError' instance which returns json ('returnJson').
+  -- Wrap handler into 'MonadError' instance which returns json ('returnJson') back to user.
   runExceptV .
   
-    -- Explicitly say that there must be a json object provided.
-    -- It doesn't matter what fields it contains.  
+    -- Require json object in request body.  
     withJsonObject $ do
     
       -- Get "name" field from json object.
@@ -50,6 +57,7 @@ postCreateNoteR =
 ```
 
 If everything is OK, then user gets back object
+
 ```json
 { data    : []
 , error   : false
@@ -76,11 +84,10 @@ postCreateNoteR :: Handler ()
 postCreateNoteR =
 
   -- Now object won'be returned. Instead, a message will be set on error.
-  -- Also, not that the result type of handler changed too.
-  runExceptV .
+  -- Also, not that handler's type changed too.
+  runExceptM .
   
-    -- Explicitly say that there must be a json object provided.
-    -- It doesn't matter what fields it contains.  
+    -- Require json object in request body.
     withJsonObject $ do
     
       -- Get "name" field from json object.
@@ -97,10 +104,12 @@ postCreateNoteR =
         noteName noteComment noteContents
 ```
 
+It lets you not to worry much about json API because you do not declare it explicitly.
+
 As a downside, most messages are fine for debugging, but user might not want to see them.
 
-# Example
+# More examples.
 
-There is an example in `app`. It is a subsite which can create, delete, read and write files. Files are being saved on server in `_junk/file`.
+There is another example in `app`. It is a subsite which can create, delete, read and write files. Files are being saved on server in `_junk/file`.
 
-I should note that top-level functions which can be called in subsite handler have too complex type if they expect json object as environment. This is implied by using `ReaderT`. I used to have special wrapper around `ReaderT` which does automatic liftings. It was nice when I had just `ExceptV` like wrapper. But now, when there is a way to set a message on error, such `ReaderT` wrapper must deal both with `ExceptV` and `ExceptM`. And I'm not sure how to do it right. So I just made it simple.
+I should note that top-level functions which can be called in subsite handler have too complex type if they require json object as environment. This is implied by using `ReaderT`. I used to have special wrapper around `ReaderT` which did automatic lifting. It was nice when I had just `ExceptV` like wrapper. But now, when there is a way to set a message on error, such `ReaderT` wrapper must deal both with `ExceptV` and `ExceptM`. And I'm not sure how to do it right. So I just made it simple.
