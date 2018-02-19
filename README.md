@@ -4,7 +4,7 @@ Lift functions from `Maybe` to `MonadError`. On error, either set message in ses
 
 ## Short example.
 
-Suppose you want to write a handler which creates a note on server. The note might be saved in file system or database, but it's not the point. Our handler will expect a json object as an argument of form:
+Suppose you want to write a handler which creates a note on server. The note might be saved in file system or database. Our handler will expect a json object as an argument of form:
 
 ```json
 { name     : "name-of-note"
