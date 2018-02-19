@@ -30,7 +30,7 @@ import Data.Typeable
 import Yesod.Except.Persist
 
 
--- | Parse request body to json 'Value'.
+-- | Parse request body to 'Value' (lift 'rawRequestBody` to 'MonadError').
 parseJsonValue :: (MonadError Text m, MonadHandler m) => m Value
 parseJsonValue = do
   eValue <- rawRequestBody $$ runCatchC (sinkParser value')
@@ -38,7 +38,7 @@ parseJsonValue = do
     Left  e -> throwError $ pack $ show e
     Right v -> pure v
 
--- | Parse request body to json 'Value'; throw error on every case except 'Object'.
+-- | Parse request body to 'Object'.
 parseJsonObject :: (MonadError Text m, MonadHandler m) => m Object
 parseJsonObject = do
   v <- parseJsonValue
@@ -58,15 +58,21 @@ parseJsonBody_ = do
                       "invalid json for " ++
                          show (typeRep (Proxy :: Proxy a))
 
--- | Environment with json object.
+-- | Get 'Object' from request body and use it as environment.
+withJsonObject
+  :: (MonadHandler m, MonadError Text m) => ReaderT Object m b -> m b
+withJsonObject f = do
+  parseJsonObject >>= runReaderT f
+
+-- | Environment with 'Object'.
 class HasObject r where
   getObject :: r -> Object
 
--- | Object is an instance of HasObject.
+-- | 'Object' is an instance of 'HasObject'.
 instance HasObject Object where
   getObject = id
 
--- | Retrieve json object field by key.
+-- | Retrieve value by key from environment with 'Object'.
 askValue
   :: forall m r a .
        ( MonadError Text m
@@ -80,7 +86,9 @@ askValue key = do
     Success a -> pure a
     Error   _ -> throwError (errMsg key)
   where
+    -- Quite an ugly way to run a parser, but I didn't find any other.
     parse_ p = parse (const p) ()
+    -- Message is a bit longer and complex then usual. That's why it is here.
     errMsg k = pack $
       "cannot parse '"
         ++ show (typeRep (Proxy :: Proxy a))
@@ -88,7 +96,8 @@ askValue key = do
             ++ show k
               ++ "'"
 
--- | Get 'Entity' from database using 'Key' from json object.
+-- | Get id from environment with 'Object' and use it to get 'Entity' from
+-- database.
 askEntity
   ::
   ( IsYesodPersistEntity master r
@@ -100,9 +109,3 @@ askEntity
   ) => Text -> m (HandlerT master IO) (Entity r)
 askEntity key = do
   askValue key >>= getEntity_
-
--- | Get json object from request body and use it as environment.
-withJsonObject
-  :: (MonadHandler m, MonadError Text m) => ReaderT Object m b -> m b
-withJsonObject f = do
-  parseJsonObject >>= runReaderT f

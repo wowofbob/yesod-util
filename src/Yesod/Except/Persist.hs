@@ -18,19 +18,19 @@ import Data.Text (Text, pack)
 import Data.Typeable
 
 
--- | Shortcut constraint for something being a persist entity.
+-- | Shortcut constraint for something being a 'PersistEntity'.
 type IsPersistEntity r b =
   ( PersistEntity r 
   , PersistEntityBackend r ~ BaseBackend b
   )
 
--- | Shortcut constraint for something being a persist entity in yesod.
+-- | Shortcut constraint for something being a 'PersistEntity' in 'YesodPersist'.
 type IsYesodPersistEntity master r =
   ( YesodPersist master
   , IsPersistEntity r (YesodPersistBackend master)
   )
 
--- | Like getEntity, but wrapped into MonadError.
+-- | Like 'getEntity', but wrapped into 'MonadError'.
 -- Throw error with type information on 'Nothing'.
 getEntity_
   :: forall master r m .
