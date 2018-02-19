@@ -10,6 +10,8 @@ import System.Directory
 import File
 import File.Data
 
+import Yesod.Except.Json
+import Yesod.Except.Wrappers
 
 data App = App
   { appFileRootDir :: FilePath
@@ -28,6 +30,7 @@ instance YesodFile App where
 mkYesod "App" [parseRoutes|
 / HomeR GET
 /file AppFileR File appFile
+/echo EchoR POST
 |]
 
 
@@ -36,6 +39,19 @@ instance Yesod App
 getHomeR :: Handler Html
 getHomeR = defaultLayout [whamlet|Hello World!|]
 
+
+data Echo = Echo
+  { echoText :: Text
+  }
+
+instance ToJSON Echo where
+  toJSON e = object
+    [ "text" .= echoText e
+    ]
+
+postEchoR :: Handler Value
+postEchoR = runExceptVWithObject $ askValue "text" >>= pure . Echo
+  
 
 main :: IO ()
 main = do
