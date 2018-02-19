@@ -1,6 +1,6 @@
 # yesod-except
 
-Lift functions from `Maybe` to `MonadError`. On error, either set message in session (`setMessage`) or return back json object to user.
+Lift functions from `Maybe` to `MonadError`. On error, either set message in session (`setMessage`) or return back json object to user (`returnJson`).
 
 ## Short example.
 
