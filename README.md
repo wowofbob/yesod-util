@@ -110,6 +110,6 @@ As a downside, most messages are fine for debugging, but user might not want to 
 
 # More examples.
 
-There is another example in `app`. It is a subsite which can create, delete, read and write files. Files are being saved on server in `_junk/file`. Type `stack exec app` to launch it.
+There is another example in `app`. It is a subsite which can create, delete, read and write files. Files are being saved on server in `_junk/file`. Type `stack exec app` to launch it. Use scripts from `curl/File` to play with it.
 
 I should note that top-level functions which can be called in subsite handler have too complex type if they require json object as environment. This is implied by using `ReaderT`. I used to have special wrapper around `ReaderT` which did automatic lifting. It was nice when I had just `ExceptV` like wrapper. But now, when there is a way to set a message on error, such `ReaderT` wrapper must deal both with `ExceptV` and `ExceptM`. And I'm not sure how to do it right. So I just made it simple.
