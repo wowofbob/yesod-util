@@ -4,6 +4,8 @@
 
 # Example
 
+> You can find complete example in `app/math`. Run it with `stack exec math`, use `curl/math.sh` to play.
+
 Suppose you want to create a JSON web service: it takes a JSON request and returns a JSON response. Our service will handle math operations: plus and minus.
 
 At first, we must make some declarations to help themself:
@@ -62,7 +64,6 @@ A user application gets back one of the objects listed below depending on errors
 
 ---
 ##### No Errors
-
 ```javascript
 { data    : <integer-number>
 , error   : false
@@ -84,7 +85,7 @@ A user application gets back one of the objects listed below depending on errors
 ```javascript
 { data    : null
 , error   : true
-, message : "cannot parse 'OpType' associated with key 'type'"
+, message : "cannot parse 'OpType' associated with key 'type': unknown operation"
 }
 ```
 ---
@@ -93,7 +94,7 @@ A user application gets back one of the objects listed below depending on errors
 ```javascript
 { data    : null
 , error   : true
-, message : "cannot parse 'Number' associated with key 'left'"
+, message : "cannot parse 'Number' associated with key 'left': expected Int, encountered String"
 }
 ```
 ---
@@ -102,6 +103,6 @@ A user application gets back one of the objects listed below depending on errors
 ```javascript
 { data    : null
 , error   : true
-, message : "cannot parse 'Number' associated with key 'right'"
+, message : "cannot parse 'Number' associated with key 'right': Int is either floating or will cause over or underflow: 201.9"
 }
 ```
