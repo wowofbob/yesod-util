@@ -27,18 +27,9 @@ library:
   - -O2
   
 executables:
-  app:
-    main: Main.hs
-    source-dirs: app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - yesod-except
   math:
     main: Main.hs
-    source-dirs: app/math
+    source-dirs: example/math
     ghc-options:
     - -threaded
     - -rtsopts
