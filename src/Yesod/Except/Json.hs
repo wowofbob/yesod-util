@@ -35,7 +35,7 @@ parseJsonValue :: (MonadError Text m, MonadHandler m) => m Value
 parseJsonValue = do
   eValue <- rawRequestBody $$ runCatchC (sinkParser value')
   case eValue of
-    Left  e -> throwError $ pack $ show e
+    Left  e -> throwError . pack $ show e
     Right v -> pure v
 
 -- | Parse request body to 'Object' (wrapper around 'parseJsonValue').
@@ -56,8 +56,9 @@ parseJsonBody_ = do
   case json of
     Success body -> pure body
     Error   _    -> throwError . pack $
-                      "invalid json for " ++
-                         show (typeRep (Proxy :: Proxy a))
+                      "invalid json for '"
+                        ++ show (typeRep (Proxy :: Proxy a))
+                          ++ "'"
 
 -- | Get 'Object' from request body and use it as environment.
 withJsonObject
