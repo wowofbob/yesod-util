@@ -16,18 +16,18 @@ data OpType = OpTypePlus | OpTypeMinus
 instance FromJSON OpType where
   parseJSON (String str) =
     case str of
-    	"plus"  -> pure OpTypePlus
-    	"minus" -> pure OpTypeMinus
-    	_       -> fail "unknown operation"
+      "plus"  -> pure OpTypePlus
+      "minus" -> pure OpTypeMinus
+      _       -> fail "unknown operation"
   parseJSON invalid =
     typeMismatch "OpType" invalid
 
 -- | Wrapper for a number.
-newtype Number = { toInt :: Int }
+newtype Number = Number { toInt :: Int }
 
 -- | How to parse 'Number'.
 instance FromJSON Number where
-  parseJSON = Number <$> parseJSON
+  parseJSON = fmap Number . parseJSON
 
 -- | How to serialize 'Number'.
 instance ToJSON Number where
@@ -53,7 +53,7 @@ postMathServiceR =
       nmRight <- toInt <$> askValue "right"
       -- Return result.
       pure . Number $
-        case OpType of
+        case opType of
           OpTypePlus  -> nmLeft + nmRight
           OpTypeMinus -> nmLeft - nmRight
 ```
