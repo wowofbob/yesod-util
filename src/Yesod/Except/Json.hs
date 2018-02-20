@@ -55,10 +55,11 @@ parseJsonBody_ = do
   json <- parseJsonBody
   case json of
     Success body -> pure body
-    Error   _    -> throwError . pack $
+    Error   err  -> throwError . pack $
                       "invalid json for '"
                         ++ show (typeRep (Proxy :: Proxy a))
-                          ++ "'"
+                          ++ "': "
+                            ++ unpack err
 
 -- | Get 'Object' from request body and use it as environment.
 withJsonObject
@@ -86,17 +87,18 @@ askValue key = do
   obj <- getObject <$> ask
   case parse_ (obj .: key >>= parseJSON) of
     Success a -> pure a
-    Error   _ -> throwError (errMsg key)
+    Error   e -> throwError (errMsg e key)
   where
     -- Quite an ugly way to run a parser, but I didn't find any other.
     parse_ p = parse (const p) ()
     -- Message is a bit longer and complex then usual. That's why it is here.
-    errMsg k = pack $
+    errMsg e k = pack $
       "cannot parse '"
         ++ show (typeRep (Proxy :: Proxy a))
           ++ "' associated with key '"
-            ++ show k
-              ++ "'"
+            ++ unpack k
+              ++ "': "
+                ++ unpack e
 
 -- | Get entity using ID from 'Object' in environment.
 askEntity
