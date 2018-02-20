@@ -36,3 +36,12 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - yesod-except
+  math:
+    main: Main.hs
+    source-dirs: app/math
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - yesod-except
