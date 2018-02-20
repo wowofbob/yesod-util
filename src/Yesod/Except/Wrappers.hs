@@ -23,7 +23,8 @@ import Text.Blaze
 import Yesod.Except.Json
 
 
--- | Same as 'ExceptT' but 'run' calls 'setMessage' on 'Left'.
+-- | Wrapper around 'ExceptT' with a side effect of setting message in user
+-- session on error.
 newtype ExceptM m a = ExceptM { unExceptM :: ExceptT Text m a }
   deriving
     ( Functor
@@ -48,7 +49,9 @@ instance (MonadHandler m) => MonadHandler (ExceptM m) where
   liftHandlerT = lift . liftHandlerT
 
 
--- | Run 'ExceptT'. On error, call 'setMessage'. Otherwise, ignore result.
+-- | Special runner for 'ExceptT':
+-- do nothing on 'Right' and ingnore result;
+-- call 'setMessage' on the value of 'Left'. 
 exceptToMessage :: (ToMarkup t, MonadHandler m) => ExceptT t m a -> m ()
 exceptToMessage f = do
   eres <- runExceptT f
@@ -56,18 +59,19 @@ exceptToMessage f = do
     Left  msg -> setMessage . toHtml $ msg
     Right _   -> pure ()
 
--- | Run 'ExceptM'. As a side effect, set message in session on error.
+-- | Runner for 'ExceptM': set message in user session on error.
 runExceptM :: (MonadHandler m) => ExceptM m a -> m ()
 runExceptM = exceptToMessage . unExceptM
 
--- | Run environment with json object and set message in session on error.
+-- | Run environment with json object and set message in user session on error.
 runExceptMWithObject
   :: (MonadHandler m)
     => ReaderT Object (ExceptM m) a -> m ()
 runExceptMWithObject = runExceptM . withJsonObject
 
 
--- | Same as 'ExceptT' but 'run' converts 'Either' into 'Value'.
+-- | Wrapper around 'ExceptT' with a side effect of returning json answer back
+-- to user application.
 newtype ExceptV m a = ExceptV { unExceptV :: ExceptT Text m a }
   deriving
     ( Functor
@@ -92,7 +96,7 @@ instance (MonadHandler m) => MonadHandler (ExceptV m) where
   liftHandlerT = lift . liftHandlerT
 
 
--- | Helper wrapper around 'Either'.
+-- | Helper wrapper around 'Either' for running 'ExceptV'.
 newtype Answer a = Answer (Either Text a)
 
 instance ToJSON a => ToJSON (Answer a) where
@@ -107,16 +111,18 @@ instance ToJSON a => ToJSON (Answer a) where
     , "data"    .= val
     ]
 
--- | Run 'ExceptT'. Convert the result into 'Value'. Return it as json.
+-- | Specical runner for 'ExceptT': convert the result to 'Value' using
+-- 'Answer' for serialization.
 exceptToValue :: (ToJSON a, Monad m) => ExceptT Text m a -> m Value
 exceptToValue f = do
   runExceptT f >>= returnJson . Answer
 
--- | Run 'ExceptV'. As a side effect, return json.
+-- | Runner for 'ExceptV': return json answer back to user application.
 runExceptV :: (ToJSON a, Monad m) => ExceptV m a -> m Value
 runExceptV = exceptToValue . unExceptV
 
--- | Run environment with json object and return json reply to user.
+-- | Run environment with json object and return json answer back to user
+-- application.
 runExceptVWithObject
   :: (MonadHandler m, ToJSON a)
     => ReaderT Object (ExceptV m) a -> m Value

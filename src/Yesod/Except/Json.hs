@@ -38,7 +38,7 @@ parseJsonValue = do
     Left  e -> throwError $ pack $ show e
     Right v -> pure v
 
--- | Parse request body to 'Object'.
+-- | Parse request body to 'Object' (wrapper around 'parseJsonValue').
 parseJsonObject :: (MonadError Text m, MonadHandler m) => m Object
 parseJsonObject = do
   v <- parseJsonValue
@@ -47,6 +47,7 @@ parseJsonObject = do
     _          -> throwError "json object expected"
 
 -- | Lift 'parseJsonBody' to 'MonadError'.
+-- On error, show which type failed to parse.
 parseJsonBody_
   :: forall m a .
        (MonadError Text m, MonadHandler m, FromJSON a, Typeable a) => m a
@@ -72,7 +73,7 @@ class HasObject r where
 instance HasObject Object where
   getObject = id
 
--- | Retrieve value by key from environment with 'Object'.
+-- | Retrieve value by key from 'Object' in environment.
 askValue
   :: forall m r a .
        ( MonadError Text m
@@ -96,8 +97,7 @@ askValue key = do
             ++ show k
               ++ "'"
 
--- | Get id from environment with 'Object' and use it to get 'Entity' from
--- database.
+-- | Get entity using ID from 'Object' in environment.
 askEntity
   ::
   ( IsYesodPersistEntity master r

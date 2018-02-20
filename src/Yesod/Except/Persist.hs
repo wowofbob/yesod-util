@@ -30,8 +30,7 @@ type IsYesodPersistEntity master r =
   , IsPersistEntity r (YesodPersistBackend master)
   )
 
--- | Like 'getEntity', but wrapped into 'MonadError'.
--- Throw error with type information on 'Nothing'.
+-- | Lift 'getEntity' to 'MonadError': throw error on 'Nothing'.
 getEntity_
   :: forall master r m .
   ( IsYesodPersistEntity master r
