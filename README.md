@@ -4,7 +4,7 @@
 
 # Example
 
-> You can find complete example in `app/math`. Run it with `stack exec math`, use `curl/math.sh` to play.
+> You can find complete example in [app/math/Main.hs](https://github.com/wowofbob/yesod-except/blob/master/app/math/Main.hs). Run it with `stack exec math`, use [curl/math.sh](https://github.com/wowofbob/yesod-except/blob/master/curl/math.sh) to play.
 
 Suppose you want to create a JSON web service: it takes a JSON request and returns a JSON response. Our service will handle math operations: plus and minus.
 
