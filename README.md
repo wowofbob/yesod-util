@@ -225,6 +225,16 @@ Use `runExceptV` to run `ExceptV`.
 
 Use `runExceptM` to run `ExceptM`.
 
+## About modules.
+
+The library is split into three modules:
+
+* `Yesod.Except.Json` - lifts for JSON;
+* `Yesod.Except.Persist` - lifts for `persistent`;
+* `Yesod.Except.Wrappers` - predefined out of the box monads;
+
+I'm pretty sure that it is fine to keep JSON and `persistent` parts separated. But sometimes I feel weird to import `Yesod.Except.Wrappers` each time when I need one or another. I'm not sure should it be re-exported or not.
+
 ## Conclusion.
 
 `yesod-except` lets you to establish how user application gets notified about error. This way you get less headache because you know that your API supports some strict policy about error handling. You can change it by using your own monad or by handling errors by hands in special cases. Error messages are not intended for a user of application: they show to developer what happened. That's why I can't come up with a good example for `ExceptM`: usually message gets rendered automatically. Anyway, one can use `ExceptM` if message is used by client application and isn't rendered automatically. It also should cover *post/redirect/get* case, but I didn't try it.
