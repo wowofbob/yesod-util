@@ -1,6 +1,6 @@
 # yesod-except
 
-`yesod-except` is a haskell library which aims to help with error handling in `yesod`. 
+`yesod-except` is a haskell library which aims to help with error handling in `yesod` (specifically for JSON web services).
 
 ## Example
 
@@ -8,7 +8,7 @@
 
 Suppose you want to create a JSON web service: it takes a JSON request and returns a JSON response. Our service will handle math operations: plus and minus.
 
-At first, we must make some declarations to help themself:
+First we must make some declarations to help themself:
 
 ```haskell
 -- | Type of operation to handle.
@@ -36,7 +36,7 @@ instance ToJSON Number where
   toJSON = toJSON . toInt
 ```
 
-Next, lets make a handler for this service:
+Now lets make a handler for this service:
 
 ```haskell
 postMathServiceR :: Handler Value
@@ -60,9 +60,9 @@ postMathServiceR =
           OpTypeMinus -> nmLeft - nmRight
 ```
 
-Our handler returns back to user a json object with result data, error flag and error message (`runExceptV`). It takes a json object as an argument (`withJsonObject`). This object must have `"type"`, `"left"`, and `"right"`keys (`askValue`). The `"type"` key must point to either `"plus"` or `"minus"` strings (`FromJSON` definition for `OpType`); both `"left"` and `"right"` keys must point to integers (`FromJSON` definition for `Number`). There might be other keys in json object, but, according to definition of our handler, these three must be present and be valid. Otherwise request will be rejected.
+Our handler returns a json object with result, error flag and error message (`runExceptV`). It takes a json object as an argument (`withJsonObject`). This object must have `"type"`, `"left"`, and `"right"`keys (`askValue`). The `"type"` key must point to either `"plus"` or `"minus"` strings (`FromJSON` definition for `OpType`); both `"left"` and `"right"` keys must point to integers (`FromJSON` definition for `Number`). There might be other keys in json object, but, according to definition of our handler, these three must be present and be valid. Otherwise request will be rejected.
 
-A user application gets back one of the objects listed below depending from errors:
+A client application gets back one of the objects listed below depending from errors:
 
 ---
 ##### No Errors
@@ -75,7 +75,8 @@ curl -w "\n" -i -H "Accept: application/json" -X POST -d '{"type":"minus","left"
 , message : "OK"
 }
 ```
-##### Invalid json.
+---
+##### Invalid json
 ```bash
 curl -w "\n" -i -H "Accept: application/json" -X POST -d '{{{{{' 'http://localhost:3000'
 ```
@@ -86,7 +87,7 @@ curl -w "\n" -i -H "Accept: application/json" -X POST -d '{{{{{' 'http://localho
 }
 ```
 ---
-##### No json object in request body.
+##### No json object in request body
 ```bash
 curl -w "\n" -i -H "Accept: application/json" -X POST -d false 'http://localhost:3000'
 ```
@@ -97,7 +98,7 @@ curl -w "\n" -i -H "Accept: application/json" -X POST -d false 'http://localhost
 }
 ```
 ---
-##### Key is not present.
+##### Key is not present
 ```bash
 curl -w "\n" -i -H "Accept: application/json" -X POST -d '{"type":"minus","right":1}' 'http://localhost:3000'
 ```
@@ -141,11 +142,12 @@ curl -w "\n" -i -H "Accept: application/json" -X POST -d '{"type":"minus","left"
 }
 ```
 
-## How it works.
+## How it works
 
-Most of the code for dealing with json was lifted to `MonadError`. For instance, instead of writing
+Most of the code for dealing with json is lifted to `MonadError`. For instance, instead of writing
 
 ```haskell
+someHandler :: Handler Value
 someHandler = do
   json <- parseJsonBody
   case json of
@@ -155,14 +157,15 @@ someHandler = do
 you can do
 
 ```haskell
+someHandler :: Handler Value
 someHandler = runner $ do
   json <- parseJsonBody_
   ...
 ```
 
-`runner` is a something which deals with error at the end. The behaviour is defined by a monad being used.
+where `runner` is a something which deals with error at the end. The behaviour is defined by a monad being used.
 
-There are some special monads in `Yesod.Except.Wrappers` which you can use out of the box. But you can also use yours. This is possible because each function in `Yesod.Except.Json` and `Yesod.Except.Persist` depends from `mtl` style type classes only (with a little exception to `withJsonObject`). For example, lets look at the type of `parseJsonBody_`:
+There are out of the box monads in `Yesod.Except.Wrappers`. But you can also use yours. This is possible because each function in `Yesod.Except.Json` and `Yesod.Except.Persist` depends from `mtl` style type classes only (with a little exception to `withJsonObject`). For example, lets take a look at the type of `parseJsonBody_`:
 
 ```haskell
 parseJsonBody_
@@ -171,7 +174,9 @@ parseJsonBody_
 ```
 You are completely free to use it in any `MonadError Text` and `MonadHander` monad.
 
-### ExceptV
+### Out of the box monads
+
+#### ExceptV
 
 `ExceptV` is a wrapper around `ExceptT` with a side effect of returning back to user application a json object of following format:
 
@@ -184,7 +189,7 @@ You are completely free to use it in any `MonadError Text` and `MonadHander` mon
 
 Use `runExceptV` to run `ExceptV`.
 
-### ExceptM
+#### ExceptM
 
 `ExceptM` is wrapper around `ExceptT` with a side effect of setting up a message in user session on error.
 
@@ -192,4 +197,4 @@ Use `runExceptM` to run `ExceptM`.
 
 ## Conclusion.
 
-Using error monad to deal with errors lets you to establish how the user application gets notified about error. You get less headache because you know that your API support some strict policy for error handling. You can change it by using your own monad or by handling errors by hands in special cases. Error messages are not intended for a user of application. They show the developer what happened. That's why I can't come up with a good example for `ExceptM`: usually a message gets rendered automatically. Most of my code is JSON services so I use `ExceptV`. Anyway, one can use `ExceptM` if message is being used by client application and not being rendered automatically.
+Using error monads lets you to establish how user application gets notified about error. This way you get less headache because you know that your API supports some strict policy about error handling. You can change it by using your own monad or by handling errors by hands in special cases. Error messages are not intended for a user of application. They show to developer what happened. That's why I can't come up with a good example for `ExceptM`: usually a message gets rendered automatically. Anyway, one can use `ExceptM` if message is used by client application and isn't rendered automatically. It also should cover *post/redirect/get* case, but I didn't try it.
