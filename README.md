@@ -64,15 +64,30 @@ A user application gets back one of the objects listed below depending on errors
 
 ---
 ##### No Errors
+```bash
+curl -w "\n" -i -H "Accept: application/json" -X POST -d '{"type":"minus","left":1,"right":1}' 'http://localhost:3000'
+```
 ```javascript
-{ data    : <integer-number>
+{ data    : 0
 , error   : false
 , message : "OK"
 }
 ```
+##### Invalid json.
+```bash
+curl -w "\n" -i -H "Accept: application/json" -X POST -d '{{{{{' 'http://localhost:3000'
+```
+```javascript
+{ data    : null
+, error   : true
+, message : "ParseError {errorContexts = [\"34\"], errorMessage = \"Failed reading: satisfy\", errorPosition = 1:2}"
+}
+```
 ---
 ##### No json object in request body.
-
+```bash
+curl -w "\n" -i -H "Accept: application/json" -X POST -d false 'http://localhost:3000'
+```
 ```javascript
 { data    : null
 , error   : true
@@ -80,8 +95,21 @@ A user application gets back one of the objects listed below depending on errors
 }
 ```
 ---
+##### Key is not present.
+```bash
+curl -w "\n" -i -H "Accept: application/json" -X POST -d '{"type":"minus","right":1}' 'http://localhost:3000'
+```
+```javascript
+{ data    : null
+, error   : true
+, message : "cannot parse 'Number' associated with key 'left': key \"left\" not present"
+}
+```
+---
 ##### Invalid "type"
-
+```bash
+curl -w "\n" -i -H "Accept: application/json" -X POST -d '{"type":"multiply","left":1,"right":1}' 'http://localhost:3000'
+```
 ```javascript
 { data    : null
 , error   : true
@@ -90,7 +118,9 @@ A user application gets back one of the objects listed below depending on errors
 ```
 ---
 ##### Invalid "left"
-
+```bash
+curl -w "\n" -i -H "Accept: application/json" -X POST -d '{"type":"minus","left":"123","right":1}' 'http://localhost:3000'
+```
 ```javascript
 { data    : null
 , error   : true
@@ -99,10 +129,12 @@ A user application gets back one of the objects listed below depending on errors
 ```
 ---
 ##### Invalid "right"
-
+```bash
+curl -w "\n" -i -H "Accept: application/json" -X POST -d '{"type":"minus","left":1,"right":true}' 'http://localhost:3000'
+```
 ```javascript
 { data    : null
 , error   : true
-, message : "cannot parse 'Number' associated with key 'right': Int is either floating or will cause over or underflow: 201.9"
+, message : "cannot parse 'Number' associated with key 'right': expected Int, encountered Boolean"
 }
 ```
