@@ -60,7 +60,7 @@ postMathServiceR =
           OpTypeMinus -> nmLeft - nmRight
 ```
 
-Our handler takes a json object as an argument. This object must have `"type"`, `"left"`, and `"right"`keys. The `"type"` key must point to either `"plus"` or `"minus"` strings (follows from `FromJSON` definition for `OpType`); both `"left"` and `"right"` keys must point to integers. There might be other keys in json object, but, according to definition of our handler, these three must be present and be valid. Otherwise request will be rejected.
+Our handler takes a json object as an argument (`withJsonObject` call). This object must have `"type"`, `"left"`, and `"right"`keys (`askValue` calls). The `"type"` key must point to either `"plus"` or `"minus"` strings (`FromJSON` definition for `OpType`); both `"left"` and `"right"` keys must point to integers (`FromJSON` definition for `Number`). There might be other keys in json object, but, according to definition of our handler, these three must be present and be valid. Otherwise request will be rejected.
 
 A user application gets back one of the objects listed below depending from errors:
 
