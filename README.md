@@ -176,6 +176,36 @@ You are completely free to use it in any `MonadError Text` and `MonadHander` mon
 
 ### Out of the box monads
 
+Each monad here is a wrapper around `ExceptT` defined in `Yesod.Except.Wrappers`. These monads are instances of `MonadHandler`. So you can call usual `Handler` code inside. For example, you can do:
+
+```haskell
+someHandler :: Handler Value
+someHandler = runExceptV $ do
+  app <- getYesod
+  ...
+```
+
+The only function which does depend from implemenation is `withJsonObject`:
+
+```haskell
+-- | Get 'Object' from request body and use it as environment.
+withJsonObject
+  :: (MonadHandler m, MonadError Text m) => ReaderT Object m b -> m b
+```
+But `ReaderT r m` is a `MonadHandler` when `m` is `MonadHandler`. So you can also do this:
+
+```haskell
+someHandler :: Handler Value
+someHandler =
+  runExceptV $ do
+    app <- getYesod
+    withJsonObject $ do
+      app1 <- getYesod
+      ...
+```
+
+The whole idea was to let the user of the library to write usual `Handler` code with one exception that errors are being handled automatically.
+
 #### ExceptV
 
 `ExceptV` is a wrapper around `ExceptT` with a side effect of returning back to user application a json object of following format:
@@ -197,4 +227,4 @@ Use `runExceptM` to run `ExceptM`.
 
 ## Conclusion.
 
-Using error monads lets you to establish how user application gets notified about error. This way you get less headache because you know that your API supports some strict policy about error handling. You can change it by using your own monad or by handling errors by hands in special cases. Error messages are not intended for a user of application: they show to developer what happened. That's why I can't come up with a good example for `ExceptM`: usually message gets rendered automatically. Anyway, one can use `ExceptM` if message is used by client application and isn't rendered automatically. It also should cover *post/redirect/get* case, but I didn't try it.
+`yesod-except` lets you to establish how user application gets notified about error. This way you get less headache because you know that your API supports some strict policy about error handling. You can change it by using your own monad or by handling errors by hands in special cases. Error messages are not intended for a user of application: they show to developer what happened. That's why I can't come up with a good example for `ExceptM`: usually message gets rendered automatically. Anyway, one can use `ExceptM` if message is used by client application and isn't rendered automatically. It also should cover *post/redirect/get* case, but I didn't try it.
