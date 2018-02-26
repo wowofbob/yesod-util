@@ -227,7 +227,7 @@ Use `runExceptM` to run `ExceptM`.
 
 ## Customize messages.
 
-One can customize error messages using either `?>` or `<?` operators defined in `Yesod.Except`. They both replace error message of the whole expression to which they are applied on. For example, one can change message in our math handler:
+One can customize error messages using either `?>` or `<?` operators defined in `Yesod.Except`. They both replace error message of the whole expression to which they are applied on. For example, we can change message in our math handler:
 
 ```haskell
 postMathServiceR :: Handler Value
@@ -294,4 +294,4 @@ The library is split into three core modules:
 * `Yesod.Except.Persist` - lifts for `persistent`;
 * `Yesod.Except.Wrappers` - predefined out of the box monads;
 
-But one should use `Yesod.Except` for import.
+But you should use `Yesod.Except` for import.
