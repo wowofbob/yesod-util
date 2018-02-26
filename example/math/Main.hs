@@ -54,21 +54,20 @@ postMathServiceR =
   -- Wrap handler's body into `MonadError` instance which
   -- returns a json object after evaluation. This object is
   -- constructed automatically.
-  runExceptV $
-    "unknown error" ?> do
-      -- Require json object to be present in request body.
-      withJsonObject $ do
-        -- Get type of opearation to handle.
-        opType <- askValue "type"
-        -- Get first argument.
-        nmLeft <- toInt <$> askValue "left"
-        -- Get second argument. 
-        nmRight <- toInt <$> askValue "right"
-        -- Return result.
-        pure . Number $
-          case opType of
-            OpTypePlus  -> nmLeft + nmRight
-            OpTypeMinus -> nmLeft - nmRight
+  runExceptV .
+    -- Require json object to be present in request body.
+    withJsonObject $ do
+      -- Get type of opearation to handle.
+      opType <- askValue "type"
+      -- Get first argument.
+      nmLeft <- toInt <$> askValue "left"
+      -- Get second argument. 
+      nmRight <- toInt <$> askValue "right"
+      -- Return result.
+      pure . Number $
+        case opType of
+          OpTypePlus  -> nmLeft + nmRight
+          OpTypeMinus -> nmLeft - nmRight
 
 
 -- | Just main.
