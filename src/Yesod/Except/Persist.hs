@@ -5,9 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 module Yesod.Except.Persist
-( module Control.Monad.Except
-, module Data.Text
-, IsPersistEntity
+( IsPersistEntity
 , IsYesodPersistEntity
 , getEntity_
 ) where

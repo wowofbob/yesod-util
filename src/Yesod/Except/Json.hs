@@ -6,9 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 module Yesod.Except.Json
-( module Control.Monad.Except
-, module Data.Text
-, parseJsonValue
+( parseJsonValue
 , parseJsonObject
 , parseJsonBody_
 , askValue

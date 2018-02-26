@@ -9,13 +9,9 @@ dependencies:
 - conduit-extra
 - mtl
 - text
-- yesod-auth
 - blaze-markup
-# Extra dependencies needed for executable 'app':
+# Extra dependencies for examples:
 - yesod
-- filepath
-- directory
-- bytestring
 
 library:
   
