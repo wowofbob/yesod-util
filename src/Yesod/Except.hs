@@ -6,6 +6,7 @@ module Yesod.Except
 , module Yesod.Except.Persist
 , module Yesod.Except.Wrappers
 , (?>)
+, (<?)
 ) where
 
 import Control.Monad.Except
@@ -17,5 +18,9 @@ import Yesod.Except.Wrappers
 
 
 -- | Replace error.
-(?>) :: MonadError e m => m a -> e -> m a
-action ?> msg = action `catchError` (\_ -> throwError msg)
+(<?) :: MonadError e m => m a -> e -> m a
+action <? msg = action `catchError` (\_ -> throwError msg)
+
+-- | Same as '<?' but with arguments flipped.
+(?>) :: MonadError e m => e -> m a -> m a
+msg ?> action = action <? msg
