@@ -225,16 +225,73 @@ Use `runExceptV` to run `ExceptV`.
 
 Use `runExceptM` to run `ExceptM`.
 
+## Customize messages.
+
+One can customize error messages using either `?>` or `<?` operators defined in `Yesod.Except`. They both replace error message of the whole expression to which they are applied on. For example, one can change message in our math handler:
+
+```haskell
+postMathServiceR :: Handler Value
+postMathServiceR =
+  -- Wrap handler's body into `MonadError` instance which
+  -- returns a json object after evaluation. This object is
+  -- constructed automatically.
+  runExceptV $
+    -- Now, this message will be returned on error.
+    "unknown error" ?> do
+      -- Require json object to be present in request body.
+      withJsonObject $ do
+        -- Get type of opearation to handle.
+        opType <- askValue "type"
+        -- Get first argument.
+        nmLeft <- toInt <$> askValue "left"
+        -- Get second argument. 
+        nmRight <- toInt <$> askValue "right"
+        -- Return result.
+        pure . Number $
+          case opType of
+            OpTypePlus  -> nmLeft + nmRight
+            OpTypeMinus -> nmLeft - nmRight
+```
+
+This way, all error messages will be of form
+
+```javascript
+{ data    : null
+, error   : true
+, message : "unknown error"
+}
+```
+
+One can annotate each action which may fail in order to make messages more informative and to hide internal details from user. For example:
+
+```haskell
+postMathServiceR :: Handler Value
+postMathServiceR =
+  -- Wrap handler's body into `MonadError` instance which
+  -- returns a json object after evaluation. This object is
+  -- constructed automatically.
+  runExceptV .
+    -- Require json object to be present in request body.
+    withJsonObject $ do
+      -- Get type of opearation to handle.
+      opType <- askValue "type" <? "invalid type"
+      -- Get first argument.
+      nmLeft <- toInt <$> askValue "left" <? "invalid left argument"
+      -- Get second argument. 
+      nmRight <- toInt <$> askValue "right" <? "invalid right argument"
+      -- Return result.
+      pure . Number $
+        case opType of
+          OpTypePlus  -> nmLeft + nmRight
+          OpTypeMinus -> nmLeft - nmRight
+```
+
 ## About modules.
 
-The library is split into three modules:
+The library is split into three core modules:
 
 * `Yesod.Except.Json` - lifts for JSON;
 * `Yesod.Except.Persist` - lifts for `persistent`;
 * `Yesod.Except.Wrappers` - predefined out of the box monads;
 
-I'm pretty sure that it is fine to keep JSON and `persistent` parts separated. But sometimes I feel weird to import `Yesod.Except.Wrappers` each time when I need one or another. I'm not sure should it be re-exported or not.
-
-## Notes.
-
-Error messages are not intended for a user of application: they show to developer what happened. That's why I can't come up with a good example for `ExceptM`: usually message gets rendered automatically. Anyway, one can use `ExceptM` if message is used by client application and isn't rendered automatically. It also should cover *post/redirect/get* case, but I didn't try it.
+But one should use `Yesod.Except` for import.
